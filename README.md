@@ -1,0 +1,228 @@
+*Work in progress - Do not use for anything yet.*
+
+Blobcrypt
+=========
+
+Blobcrypt is a small library to encrypt and decrypt large files using libsodium.
+
+Installation
+============
+
+The only prerequisite is [http://doc.libsodium.org/](libsodium).
+
+Then, combine the source files by running:
+
+    make
+    
+And directly drop `out/blobcrypt.c` and `out/blobcrypt.h` into your project.
+
+Usage
+=====
+
+Encryption
+----------
+
+```c
+int blobcrypt_encrypt_init(blobcrypt_encrypt_state *state,
+                           int (*write_cb)(void *user_ptr,
+                                           unsigned char *buf, size_t len),
+                           int (*close_success_cb)(void *user_ptr),
+                           int (*close_error_cb)(void *user_ptr),
+                           void *user_ptr, unsigned long long total_len,
+                           const unsigned char *k);
+```                           
+
+Initialize the encryption system.
+
+`write_cb` is a pointer to a function reponsible for writing `len`
+bytes from `buf` into the target file or memory region.
+It must return `0` on success and `-1` on error. Partial writes are
+not allowed.
+
+`close_success_cb` is a pointer to a function being called after the
+encrypted data has been successfully written. If the output is a file,
+this function might rename a temporary file to its final name.
+
+If the encryption process fails, `close_error_cb` will be called
+instead of `close_success_cb`. If the output is a file,
+`close_error_cb` should delete the temporary destination file.
+
+`user_ptr` is a user-defined pointer passed to `write_cb`,
+`close_success_cb`, and `close_error_cb`. It can be `NULL`.
+
+`total_len` is the total number of bytes to encrypt.
+
+`k` is a shared secret key, whose size is `blobcrypt_KEYBYTES` bytes.
+
+The function returns `0` on success and `-1` on error.
+
+```c
+int blobcrypt_encrypt_update(blobcrypt_encrypt_state *state,
+                             const unsigned char *in,
+                             unsigned long long len);
+```                             
+
+The input data can be provided in any number of segments, of any size.
+For each call of `blobcrypt_encrypt_update`, the application must
+provide a pointer to the first byte of a segment `in` and the segment
+length `len`.
+
+The function returns `0` on success and `-1` on error.
+
+```c
+int blobcrypt_encrypt_final(blobcrypt_encrypt_state *state);
+```
+
+After `total_len` bytes have been pushed using
+`blobcrypt_encrypt_update`, the function `blobcrypt_encrypt_final`
+must be called.
+
+It will finalize the last block and call either `close_success_cb` or
+`close_error_cb`.
+
+The function returns `0` on success and `-1` on error.
+
+If any of these functions fail, subsequent calls to encryption
+functions will return `-1` as well, and no more data will be written.
+
+`close_error_cb` will be called instead of `close_success_cb` if a
+previous operation fails, no matter what the function is.
+
+Decryption
+----------
+
+```c
+int blobcrypt_decrypt_init(blobcrypt_decrypt_state *state,
+                           int (*write_cb)(void *user_ptr,
+                                           unsigned char *buf, size_t len),
+                           int (*close_success_cb)(void *user_ptr),
+                           int (*close_error_cb)(void *user_ptr),
+                           void *user_ptr, unsigned long long total_len,
+                           const unsigned char *k);
+```
+
+Initialize the decryption system.
+
+`write_cb` is a pointer to a function reponsible for writing `len`
+bytes from `buf` into the target file or memory region.
+It must return `0` on success and `-1` on error. Partial writes are
+not allowed.
+
+`close_success_cb` is a pointer to a function being called after the
+decrypted data has been successfully written. If the output is a file,
+this function might rename a temporary file to its final name.
+
+If the decryption process fails, `close_error_cb` will be called
+instead of `close_success_cb`. If the output is a file,
+`close_error_cb` should delete the temporary destination file.
+
+`user_ptr` is a user-defined pointer passed to `write_cb`,
+`close_success_cb`, and `close_error_cb`. It can be `NULL`.
+
+`total_len` is the total number of bytes of the decrypted, if known in
+advance. This is optional: if the size is not known in advance,
+`total_len` should be set to `blobcrypt_UNKNOWNSIZE` instead.
+
+Providing the expected size allows the decryption process return an
+error as soon as the first header is decrypted if the size stored in
+the header doesn't match the expected one.
+
+`k` is a shared secret key, whose size is `blobcrypt_KEYBYTES` bytes.
+
+The function returns `0` on success and `-1` on error.
+
+```c
+int blobcrypt_decrypt_update(blobcrypt_decrypt_state *state,
+                             const unsigned char *in,
+                             unsigned long long len);
+```
+
+The input data can be provided in any number of segments, of any size.
+For each call of `blobcrypt_decrypt_update`, the application must
+provide a pointer to the first byte of a segment `in` and the segment
+length `len`.
+
+The function returns `0` on success and `-1` on error.
+
+```c
+int blobcrypt_decrypt_final(blobcrypt_decrypt_state *state);
+```
+
+After all the input data have been pushed using
+`blobcrypt_decrypt_update`, `blobcrypt_decrypt_final` must be called.
+
+It will check that the expected number of bytes have been decrypted, and
+call either `close_success_cb` or `close_error_cb`.
+
+The function returns `0` on success and `-1` on error.
+
+If any of these functions fail, subsequent calls to decryption
+functions will return `-1` as well, and no more data will be written.
+
+`close_error_cb` will be called instead of `close_success_cb` if a
+previous operation fails, no matter what the function is.
+
+File format
+===========
+
+Although the implementation currently only supports sequential
+read/write, the file format allows random access read, as well as
+overwriting random blocks. Files can also be truncated and extended,
+provided that the total length is updated in the header.
+
+Header
+------
+
+Additional data section:
+
+    File magic: Bl0Cry\x01\x00
+    Header length: 4 bytes in little-endian format
+    Additional data section length: 4 bytes in little-endian format
+    Nonce: 24 bytes
+
+Encrypted data section:
+
+    Message ID: 32 bytes
+    Block size: 8 bytes in little-endian format (currently: 65536)
+    Total unencrypted message length: 8 bytes
+    Authenticator: 16 bytes
+
+Data blocks
+-----------
+
+    Nonce: 24 bytes
+    Encrypted data: up to <block size> bytes
+    Authenticator: 16 bytes
+
+The authenticator is calculated using the following additional data,
+that doesn't have to be stored in data blocks:
+
+    Offset of the first byte of the block: 8 bytes in little-endian format
+    Message ID: 32 bytes, stored in the header
+
+AEAD construction
+-----------------
+
+The header and the data blocks are encrypted and authenticated using
+an AEAD construction based on the original ChaCha20-Poly1305 for IETF
+protocols draft.
+
+Given an optional 256-bit `message ID`, a 256-bit secret key `k` and a
+192-bit nonce `nonce`, a subkey is calculated using the Blake2b hash
+function with the following parameters:
+
+    Personalization: 426c6f6243727970745f4c69622d0100
+    Salt: message ID
+    Key: k
+    Data: 128 first bits of the nonce
+    Output size: 256 bits
+
+The encryption and authentication then use the original construction
+described in the ChaCha20-Poly1305 for IETF protocols draft, with the
+following parameters:
+
+    Key: subkey as described above
+    Nonce: last 64 bits of the nonce
+
+This construction might change later on, in order to use XChaCha20 and
+the final, 96-bit nonce version of the ChaCha20-Poly1305 construction.
