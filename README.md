@@ -184,7 +184,7 @@ Encrypted data section:
 
     Message ID: 32 bytes
     Block size: 8 bytes in little-endian format (currently: 65536)
-    Total unencrypted message length: 8 bytes
+    Total unencrypted message length: 8 bytes in little-endian format
     Authenticator: 16 bytes
 
 Data blocks
