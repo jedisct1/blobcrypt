@@ -212,7 +212,7 @@ Given an optional 256-bit `message ID`, a 256-bit secret key `k` and a
 function with the following parameters:
 
     Personalization: 426c6f6243727970745f4c69622d0100
-    Salt: message ID
+    Salt: 128 first bits of the message ID
     Key: k
     Data: 128 first bits of the nonce
     Output size: 256 bits
