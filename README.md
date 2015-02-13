@@ -10,7 +10,7 @@ Installation
 
 The only prerequisite is [http://doc.libsodium.org/](libsodium).
 
-Then, combine the source files by running:
+Combine the source files by running:
 
     make
     
