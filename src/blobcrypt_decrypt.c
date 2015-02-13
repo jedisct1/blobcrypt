@@ -30,9 +30,9 @@ _blobcrypt_decrypt_flush(blobcrypt_decrypt_state *state)
     memcpy(ad.message_id, state->message_id, sizeof ad.message_id);
     if (block_decrypt(state->buf, &plen, state->buf, clen,
                       (unsigned char *) (void *) &ad, sizeof ad,
-                      state->message_id, state->nonce, state->k) != 0) {        
+                      state->message_id, state->nonce, state->k) != 0) {
         sodium_memzero(ad.message_id, sizeof ad.message_id);
-        _blobcrypt_decrypt_sinkhole(state);        
+        _blobcrypt_decrypt_sinkhole(state);
         return -1;
     }
     sodium_memzero(ad.message_id, sizeof ad.message_id);
@@ -189,8 +189,8 @@ blobcrypt_decrypt_init(blobcrypt_decrypt_state *state,
     state->block_size = blobcrypt_BLOCKSIZE;
     state->total_len = total_len;
     state->offset = 0U;
-    memmove(state->k, k, blobcrypt_KEYBYTES);    
-    memset(state->message_id, 0, sizeof state->message_id);    
+    memmove(state->k, k, blobcrypt_KEYBYTES);
+    memset(state->message_id, 0, sizeof state->message_id);
 
     return 0;
 }

@@ -133,8 +133,8 @@ blobcrypt_encrypt_init(blobcrypt_encrypt_state *state,
     state->block_size = blobcrypt_BLOCKSIZE;
     state->total_len = total_len;
     state->offset = 0U;
-    memmove(state->k, k, blobcrypt_KEYBYTES);    
-    randombytes_buf(state->message_id, sizeof state->message_id);    
+    memmove(state->k, k, blobcrypt_KEYBYTES);
+    randombytes_buf(state->message_id, sizeof state->message_id);
 
     return _write_header(state);
 }
