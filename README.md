@@ -162,6 +162,41 @@ functions will return `-1` as well, and no more data will be written.
 `close_error_cb` will be called instead of `close_success_cb` if a
 previous operation fails, no matter what the function is.
 
+Rationale for the API
+=====================
+
+The API was designed to be as safe as possible even if the application
+doesn't systematically implement error handling.
+
+In particular, the code flow is always the same no matter what failures
+happen:
+
+- `*_init()`
+- `*_update()`
+- `*_final()`
+
+Ideally, the return code of each function call should be tested. If an
+`*_update()` operation fails, the encryption/decryption process can be
+aborted prematurely.
+
+But not doing so will stop calling the `write_cb()` callback, and
+safely propagate the failure state to subsequent function calls.
+
+While suboptimal from a performance perspective, testing only the
+return code of the call to `*_final()` remains safe.
+
+Predictability: the `close_error_cb()` callback will only be called
+by `*_final()`, and the only callback that can be called by
+`*_update()` is `write_cb()`.
+
+Closing a stream or a file descriptor can involve deallocating
+resources, which can be tricky to do safely if it can happen at any time.
+
+The blobcrypt API ensures that the operation (being `close_error_cb()`
+or `close_success_cb()`) will always happen at the same place.
+
+Finally, the API doesn't perform any memory allocations.
+
 File format
 ===========
 
