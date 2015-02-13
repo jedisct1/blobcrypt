@@ -103,6 +103,7 @@ file_encrypt(int fd, off_t total_len)
     unsigned char           *k;
     blobcrypt_encrypt_state *state;
     ssize_t                  readnb;
+    int                      ret = -1;
 
     in = sodium_malloc(IN_BUFFER_SIZE);
     k = sodium_malloc(blobcrypt_KEYBYTES);
@@ -110,21 +111,23 @@ file_encrypt(int fd, off_t total_len)
     memset(k, 'K', blobcrypt_KEYBYTES);
     blobcrypt_encrypt_init(state, write_cb, close_success_cb, close_error_cb,
                            NULL, total_len, k);
-    while ((readnb = safe_read(fd, in, IN_BUFFER_SIZE)) > 0) {
-        blobcrypt_encrypt_update(state, in, (size_t) readnb);
-    }
-    if (readnb != 0) {
-        perror("read");
-        return -1;
-    }
+    do {
+        if ((readnb = safe_read(fd, in, IN_BUFFER_SIZE)) <= 0) {
+            if (readnb == -1) {
+                perror("read");
+            }
+            break;
+        }
+    } while (blobcrypt_encrypt_update(state, in, (size_t) readnb) == 0);
     if (blobcrypt_encrypt_final(state) == 0) {
         fprintf(stderr, "Success!\n");
+        ret = 0;
     }
     sodium_free(in);
     sodium_free(k);
     sodium_free(state);
 
-    return 0;
+    return ret;
 }
 
 static int
@@ -134,6 +137,7 @@ file_decrypt(int fd)
     unsigned char           *k;
     blobcrypt_encrypt_state *state;
     ssize_t                  readnb;
+    int                      ret = -1;
 
     in = sodium_malloc(IN_BUFFER_SIZE);
     k = sodium_malloc(blobcrypt_KEYBYTES);
@@ -141,21 +145,23 @@ file_decrypt(int fd)
     memset(k, 'K', blobcrypt_KEYBYTES);    
     blobcrypt_decrypt_init(state, write_cb, close_success_cb, close_error_cb,
                            NULL, blobcrypt_UNKNOWNSIZE, k);
-    while ((readnb = safe_read(fd, in, IN_BUFFER_SIZE)) > 0) {
-        blobcrypt_decrypt_update(state, in, (size_t) readnb);
-    }
-    if (readnb != 0) {
-        perror("read");
-        return -1;
-    }
+    do {
+        if ((readnb = safe_read(fd, in, IN_BUFFER_SIZE)) <= 0) {
+            if (readnb == -1) {
+                perror("read");
+            }
+            break;
+        }
+    } while (blobcrypt_decrypt_update(state, in, (size_t) readnb) == 0);
     if (blobcrypt_decrypt_final(state) == 0) {
         fprintf(stderr, "Success!\n");
+        ret = 0;
     }
     sodium_free(in);
     sodium_free(k);
     sodium_free(state);
 
-    return 0;
+    return ret;
 }
 
 static void
