@@ -52,7 +52,7 @@ instead of `close_success_cb`. If the output is a file,
 
 `total_len` is the total number of bytes to encrypt.
 
-`k` is a shared secret key, whose size is `blobcrypt_KEYBYTES` bytes.
+`k` is a secret key, whose size is `blobcrypt_KEYBYTES` bytes.
 
 The function returns `0` on success and `-1` on error.
 
@@ -127,7 +127,7 @@ Providing the expected size allows the decryption process return an
 error as soon as the first header is decrypted if the size stored in
 the header doesn't match the expected one.
 
-`k` is a shared secret key, whose size is `blobcrypt_KEYBYTES` bytes.
+`k` is a secret key, whose size is `blobcrypt_KEYBYTES` bytes.
 
 The function returns `0` on success and `-1` on error.
 
