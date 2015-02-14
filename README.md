@@ -8,7 +8,7 @@ Blobcrypt is a small library to encrypt and decrypt large files using libsodium.
 Installation
 ============
 
-The only prerequisite is [http://doc.libsodium.org/](libsodium).
+The only prerequisite is [libsodium](http://doc.libsodium.org/).
 
 Combine the source files by running:
 
