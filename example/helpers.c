@@ -5,9 +5,40 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <stdio.h>
+#include <string.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include "helpers.h"
+
+#ifndef TCSAFLUSH
+# define TCSAFLUSH 0
+#endif
+
+void
+disable_echo(void)
+{
+    struct termios p;
+
+    if (!isatty(0) || tcgetattr(0, &p) != 0) {
+        return;
+    }
+    p.c_lflag &= ~ECHO;
+    tcsetattr(0, TCSAFLUSH, &p);
+}
+
+void
+enable_echo(void)
+{
+    struct termios p;
+
+    if (!isatty(0) || tcgetattr(0, &p) != 0) {
+        return;
+    }
+    p.c_lflag |= ECHO;
+    tcsetattr(0, TCSAFLUSH, &p);
+}
 
 ssize_t
 safe_write(const int fd, const void * const buf_, size_t count,
@@ -59,4 +90,61 @@ safe_read(const int fd, void * const buf_, size_t count)
     } while (count > (ssize_t) 0);
 
     return (ssize_t) (buf - (unsigned char *) buf_);
+}
+
+ssize_t
+safe_read_partial(const int fd, void * const buf_, const size_t max_count)
+{
+    unsigned char * const buf = (unsigned char *) buf_;
+    ssize_t               readnb;
+
+    while ((readnb = read(fd, buf, max_count)) < (ssize_t) 0 &&
+           errno == EINTR);
+
+    return readnb;
+}
+
+int
+get_password(char *pwd, size_t max_len, const char *prompt)
+{
+    char   *pwd_lf;
+    ssize_t readnb;
+    size_t  pwd_pos = 0U;
+    int     ret = -1;
+
+    memset(pwd, 0, max_len);
+    if (max_len < 2U) {
+        return -1;
+    }
+    if (isatty(2)) {
+        safe_write(2, prompt, strlen(prompt), -1);
+    }
+    disable_echo();
+    for (;;) {
+        readnb = safe_read_partial(0, pwd + pwd_pos, max_len - 1U - pwd_pos);
+        if (readnb < 0 || readnb >= (ssize_t) (max_len - pwd_pos)) {
+            ret = -1;
+            break;
+        }
+        pwd_pos += readnb;
+        if ((pwd_lf = strchr(pwd, '\n')) != NULL) {
+            *pwd_lf = 0;
+            ret = 0;
+            break;
+        }
+        if (readnb == 0) {
+            ret = 0;
+            break;
+        }
+    }
+    pwd[pwd_pos] = 0;
+    if (isatty(2)) {
+        if (pwd_pos >= max_len - 1U) {
+            safe_write(2, "(truncated)", sizeof "(truncated)" - 1U, -1);
+        }
+        safe_write(2, "\n", 1U, -1);
+    }
+    enable_echo();
+
+    return ret;
 }

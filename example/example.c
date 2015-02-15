@@ -31,7 +31,7 @@ close_success_cb(void *user_ptr)
 {
     (void) user_ptr;
     fprintf(stderr, "Closing descriptor [SUCCESS]\n");
-    
+
     return 0;
 }
 
@@ -40,23 +40,67 @@ close_error_cb(void *user_ptr)
 {
     (void) user_ptr;
     fprintf(stderr, "Closing descriptor [FAILURE]\n");
-    
+
     return 0;
+}
+
+static int
+get_key_from_password(unsigned char *k, size_t k_bytes, int confirm)
+{
+    static const unsigned char salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES] =
+    { 'A', ' ', 'f', 'i', 'x', 'e', 'd', ' ', 's', 'a', 'l', 't', ' ',
+      'f', 'o', 'r', ' ', 't', 'h', 'i', 's', ' ',
+      'e', 'x', 'a', 'm', 'p', 'l', 'e', '.', '.', '.' };
+    char           h0[56];
+    char           pwd[1024U];
+    char           pwd2[1024U];
+
+    if (get_password(pwd, sizeof pwd, "Password: ") != 0) {
+        return -1;
+    }
+    if (confirm != 0) {
+        if (get_password(pwd2, sizeof pwd2, "Password (one more time): ") != 0) {
+            sodium_memzero(pwd, sizeof pwd);
+            sodium_memzero(pwd2, sizeof pwd2);
+            return -1;
+        }
+        if (strcmp(pwd, pwd2) != 0) {
+            sodium_memzero(pwd, sizeof pwd);
+            sodium_memzero(pwd2, sizeof pwd2);
+            safe_write(2, "Passwords don't match\n",
+                       sizeof "Passwords don't match\n" - 1U, -1);
+            return -1;
+        }
+        sodium_memzero(pwd2, sizeof pwd2);
+    }
+    crypto_generichash((unsigned char *) h0, sizeof h0,
+                       (const unsigned char *) pwd,
+                       strlen(pwd), NULL, 0);
+    sodium_memzero(pwd, sizeof pwd);
+
+    return crypto_pwhash_scryptsalsa208sha256
+        (k, k_bytes, h0, sizeof h0, salt,
+         crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_SENSITIVE,
+         crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_SENSITIVE);
 }
 
 static int
 file_encrypt(int fd, off_t total_len)
 {
-    unsigned char           *in;    
+
+    unsigned char           *in;
     unsigned char           *k;
     blobcrypt_encrypt_state *state;
     ssize_t                  readnb;
     int                      ret = -1;
 
-    in = sodium_malloc(IN_BUFFER_SIZE);
     k = sodium_malloc(blobcrypt_KEYBYTES);
+    if (get_key_from_password(k, blobcrypt_KEYBYTES, 1) != 0) {
+        sodium_free(k);
+        return -1;
+    }
+    in = sodium_malloc(IN_BUFFER_SIZE);
     state = sodium_malloc(sizeof *state);
-    memset(k, 'K', blobcrypt_KEYBYTES);
     blobcrypt_encrypt_init(state, write_cb, close_success_cb, close_error_cb,
                            NULL, total_len, k);
     do {
@@ -80,17 +124,20 @@ file_encrypt(int fd, off_t total_len)
 
 static int
 file_decrypt(int fd)
-{    
+{
     unsigned char           *in;
     unsigned char           *k;
     blobcrypt_encrypt_state *state;
     ssize_t                  readnb;
     int                      ret = -1;
 
-    in = sodium_malloc(IN_BUFFER_SIZE);
     k = sodium_malloc(blobcrypt_KEYBYTES);
+    if (get_key_from_password(k, blobcrypt_KEYBYTES, 0) != 0) {
+        sodium_free(k);
+        return -1;
+    }
+    in = sodium_malloc(IN_BUFFER_SIZE);
     state = sodium_malloc(sizeof *state);
-    memset(k, 'K', blobcrypt_KEYBYTES);    
     blobcrypt_decrypt_init(state, write_cb, close_success_cb, close_error_cb,
                            NULL, blobcrypt_UNKNOWNSIZE, k);
     do {

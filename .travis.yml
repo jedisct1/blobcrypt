@@ -11,4 +11,8 @@ before_script:
  - cd ..
  script:
  - make
- - ./example/example -e /etc/group > /tmp/a && ./example/example -d /tmp/a > /tmp/b && cmp /tmp/b /etc/group
+ - dd if=/dev/urandom of=/tmp/password count=42
+ - dd if=/dev/urandom of=/tmp/orig count=10000
+ - cat /tmp/password /tmp/password | ./example/example -e /tmp/orig > /tmp/enc
+ - ./example/example -d /tmp/enc < /tmp/password > /tmp/dec
+ - cmp /tmp/dec /tmp/orig
