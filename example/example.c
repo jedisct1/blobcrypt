@@ -96,11 +96,9 @@ get_key_from_password(unsigned char *k, size_t k_bytes, int confirm)
     sodium_memzero(pwd, sizeof pwd);
     memcpy(salt + SALT_PREFIX_LEN, email, email_len);
     sodium_memzero(email, sizeof email);
-
-    ret = crypto_pwhash_scryptsalsa208sha256_ll
-        (h0, sizeof h0, salt, SALT_PREFIX_LEN + email_len,
-         1ULL << 18, 1U, 8U, k, k_bytes);
-
+    ret = crypto_pwhash_scryptsalsa208sha256_ll(h0, sizeof h0, salt,
+                                                SALT_PREFIX_LEN + email_len,
+                                                1ULL << 18, 1U, 8U, k, k_bytes);
     sodium_memzero(h0, sizeof h0);
     sodium_memzero(salt, sizeof salt);
 
