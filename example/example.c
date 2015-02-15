@@ -16,7 +16,7 @@
 #include "blobcrypt.h"
 #include "helpers.h"
 
-#define IN_BUFFER_SIZE 8192
+#define IN_BUFFER_SIZE 65536
 
 static int
 write_cb(void *user_ptr, unsigned char *buf, size_t len)
@@ -71,6 +71,9 @@ get_key_from_password(unsigned char *k, size_t k_bytes, int confirm)
     if (get_password(pwd, sizeof pwd, "Password: ") != 0) {
         return -1;
     }
+    if (*pwd == 0) {
+        return -1;
+    }
     if (confirm != 0) {
         if (get_password(pwd2, sizeof pwd2, "Password (one more time): ") != 0) {
             sodium_memzero(pwd, sizeof pwd);
@@ -116,6 +119,10 @@ file_encrypt(int fd, off_t total_len)
     ssize_t                  readnb;
     int                      ret = -1;
 
+    if (isatty(1)) {
+        fprintf(stderr, "I'm not going to write to a terminal\n");
+        return -1;
+    }
     k = sodium_malloc(blobcrypt_KEYBYTES);
     if (get_key_from_password(k, blobcrypt_KEYBYTES, 1) != 0) {
         sodium_free(k);
@@ -221,6 +228,10 @@ main(int argc, char *argv[])
         usage();
     }
     close(fd);
+
+    if (ret != 0) {
+        fprintf(stderr, "Aborted.\n");
+    }
 
     return -ret;
 }
