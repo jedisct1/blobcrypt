@@ -51,9 +51,10 @@ get_key_from_password(unsigned char *k, size_t k_bytes, int confirm)
     { 'A', ' ', 'f', 'i', 'x', 'e', 'd', ' ', 's', 'a', 'l', 't', ' ',
       'f', 'o', 'r', ' ', 't', 'h', 'i', 's', ' ',
       'e', 'x', 'a', 'm', 'p', 'l', 'e', '.', '.', '.' };
-    char           h0[56];
-    char           pwd[1024U];
-    char           pwd2[1024U];
+    char h0[56];
+    char pwd[1024U];
+    char pwd2[1024U];
+    int  ret;
 
     if (get_password(pwd, sizeof pwd, "Password: ") != 0) {
         return -1;
@@ -78,10 +79,14 @@ get_key_from_password(unsigned char *k, size_t k_bytes, int confirm)
                        strlen(pwd), NULL, 0);
     sodium_memzero(pwd, sizeof pwd);
 
-    return crypto_pwhash_scryptsalsa208sha256
+    ret = crypto_pwhash_scryptsalsa208sha256
         (k, k_bytes, h0, sizeof h0, salt,
          crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_SENSITIVE,
          crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_SENSITIVE);
+
+    sodium_memzero(h0, sizeof h0);
+
+    return ret;
 }
 
 static int
