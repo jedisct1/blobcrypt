@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -15,7 +16,7 @@
 #include "blobcrypt.h"
 #include "helpers.h"
 
-#define IN_BUFFER_SIZE 1024
+#define IN_BUFFER_SIZE 8192
 
 static int
 write_cb(void *user_ptr, unsigned char *buf, size_t len)
@@ -47,15 +48,26 @@ close_error_cb(void *user_ptr)
 static int
 get_key_from_password(unsigned char *k, size_t k_bytes, int confirm)
 {
-    static const unsigned char salt[crypto_pwhash_scryptsalsa208sha256_SALTBYTES] =
-    { 'A', ' ', 'f', 'i', 'x', 'e', 'd', ' ', 's', 'a', 'l', 't', ' ',
-      'f', 'o', 'r', ' ', 't', 'h', 'i', 's', ' ',
-      'e', 'x', 'a', 'm', 'p', 'l', 'e', '.', '.', '.' };
-    char h0[56];
-    char pwd[1024U];
-    char pwd2[1024U];
-    int  ret;
+#define SALT_PREFIX "Personalization for this example"
+#define SALT_PREFIX_LEN 32
 
+    char          email[1024U];
+    char          pwd2[1024U];
+    char          pwd[1024U];
+    unsigned char salt[SALT_PREFIX_LEN + 1024U];
+    unsigned char h0[56];
+    size_t        email_len;
+    size_t        i;
+    int           ret;
+
+    assert(strlen(SALT_PREFIX) == SALT_PREFIX_LEN);
+    if (get_line(email, sizeof email, "Email: ") != 0) {
+        return -1;
+    }
+    email_len = strlen(email);
+    for (i = 0U; i < email_len; i++) {
+        email[i] = (char) tolower((unsigned char) email[i]);
+    }
     if (get_password(pwd, sizeof pwd, "Password: ") != 0) {
         return -1;
     }
@@ -74,17 +86,22 @@ get_key_from_password(unsigned char *k, size_t k_bytes, int confirm)
         }
         sodium_memzero(pwd2, sizeof pwd2);
     }
-    crypto_generichash((unsigned char *) h0, sizeof h0,
-                       (const unsigned char *) pwd,
+    safe_write(2, "Deriving key from password... ",
+               sizeof "Deriving key from password... " - 1U, -1);
+    crypto_generichash(h0, sizeof h0, (const unsigned char *) pwd,
                        strlen(pwd), NULL, 0);
     sodium_memzero(pwd, sizeof pwd);
+    memcpy(salt + SALT_PREFIX_LEN, email, email_len);
+    sodium_memzero(email, sizeof email);
 
-    ret = crypto_pwhash_scryptsalsa208sha256
-        (k, k_bytes, h0, sizeof h0, salt,
-         crypto_pwhash_scryptsalsa208sha256_OPSLIMIT_SENSITIVE,
-         crypto_pwhash_scryptsalsa208sha256_MEMLIMIT_SENSITIVE);
+    ret = crypto_pwhash_scryptsalsa208sha256_ll
+        (h0, sizeof h0, salt, SALT_PREFIX_LEN + email_len,
+         1ULL << 18, 1U, 8U, k, k_bytes);
 
     sodium_memzero(h0, sizeof h0);
+    sodium_memzero(salt, sizeof salt);
+
+    safe_write(2, "done\n", sizeof "done\n" - 1U, -1);
 
     return ret;
 }

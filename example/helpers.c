@@ -105,30 +105,29 @@ safe_read_partial(const int fd, void * const buf_, const size_t max_count)
 }
 
 int
-get_password(char *pwd, size_t max_len, const char *prompt)
+get_line(char *line, size_t max_len, const char *prompt)
 {
-    char   *pwd_lf;
+    char   *line_lf;
     ssize_t readnb;
-    size_t  pwd_pos = 0U;
+    size_t  line_pos = 0U;
     int     ret = -1;
 
-    memset(pwd, 0, max_len);
+    memset(line, 0, max_len);
     if (max_len < 2U) {
         return -1;
     }
     if (isatty(2)) {
         safe_write(2, prompt, strlen(prompt), -1);
     }
-    disable_echo();
     for (;;) {
-        readnb = safe_read_partial(0, pwd + pwd_pos, max_len - 1U - pwd_pos);
-        if (readnb < 0 || readnb >= (ssize_t) (max_len - pwd_pos)) {
+        readnb = safe_read_partial(0, line + line_pos, max_len - 1U - line_pos);
+        if (readnb < 0 || readnb >= (ssize_t) (max_len - line_pos)) {
             ret = -1;
             break;
         }
-        pwd_pos += readnb;
-        if ((pwd_lf = strchr(pwd, '\n')) != NULL) {
-            *pwd_lf = 0;
+        line_pos += readnb;
+        if ((line_lf = strchr(line, '\n')) != NULL) {
+            *line_lf = 0;
             ret = 0;
             break;
         }
@@ -137,13 +136,23 @@ get_password(char *pwd, size_t max_len, const char *prompt)
             break;
         }
     }
-    pwd[pwd_pos] = 0;
+    line[line_pos] = 0;
     if (isatty(2)) {
-        if (pwd_pos >= max_len - 1U) {
+        if (line_pos >= max_len - 1U) {
             safe_write(2, "(truncated)", sizeof "(truncated)" - 1U, -1);
         }
         safe_write(2, "\n", 1U, -1);
     }
+    return ret;
+}
+
+int
+get_password(char *pwd, size_t max_len, const char *prompt)
+{
+    int ret;
+
+    disable_echo();
+    ret = get_line(pwd, max_len, prompt);
     enable_echo();
 
     return ret;

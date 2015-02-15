@@ -13,6 +13,6 @@ before_script:
  - make
  - dd if=/dev/urandom of=/tmp/password count=42
  - dd if=/dev/urandom of=/tmp/orig count=10000
- - cat /tmp/password /tmp/password | ./example/example -e /tmp/orig > /tmp/enc
- - ./example/example -d /tmp/enc < /tmp/password > /tmp/dec
+ - (echo example@example.com ; cat /tmp/password /tmp/password) | ./example/example -e /tmp/orig > /tmp/enc
+ - (echo example@example.com ; cat /tmp/password) | ./example/example -d /tmp/enc > /tmp/dec
  - cmp /tmp/dec /tmp/orig
