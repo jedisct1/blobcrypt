@@ -4,6 +4,13 @@
 
 #include <stddef.h>
 
+#ifdef __cplusplus
+# if __GNUC__
+#  pragma GCC diagnostic ignored "-Wlong-long"
+# endif
+extern "C" {
+#endif
+
 #define blobcrypt_BLOCKSIZE 65536U
 #define blobcrypt_KEYBYTES 32U
 #define blobcrypt_UNKNOWNSIZE 0xffffffffffffffffULL
@@ -56,5 +63,9 @@ int blobcrypt_decrypt_update(blobcrypt_decrypt_state *state,
                              unsigned long long len);
 
 int blobcrypt_decrypt_final(blobcrypt_decrypt_state *state);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
