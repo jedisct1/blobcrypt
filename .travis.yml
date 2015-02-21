@@ -1,6 +1,8 @@
 language: c
+
 compiler:
  - gcc
+
 before_script:
  - git clone git://github.com/jedisct1/libsodium.git
  - cd libsodium
@@ -9,9 +11,10 @@ before_script:
  - sudo make install
  - sudo ldconfig
  - cd ..
- script:
+
+script:
  - make
- - dd if=/dev/urandom of=/tmp/password count=42
+ - dd if=/dev/urandom count=1 2> /dev/null | sha512sum > /tmp/password
  - dd if=/dev/urandom of=/tmp/orig count=10000
  - (echo example@example.com ; cat /tmp/password /tmp/password) | ./example/example -e /tmp/orig > /tmp/enc
  - (echo example@example.com ; cat /tmp/password) | ./example/example -d /tmp/enc > /tmp/dec
