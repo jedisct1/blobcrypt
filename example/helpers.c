@@ -92,18 +92,6 @@ safe_read(const int fd, void * const buf_, size_t count)
     return (ssize_t) (buf - (unsigned char *) buf_);
 }
 
-ssize_t
-safe_read_partial(const int fd, void * const buf_, const size_t max_count)
-{
-    unsigned char * const buf = (unsigned char *) buf_;
-    ssize_t               readnb;
-
-    while ((readnb = read(fd, buf, max_count)) < (ssize_t) 0 &&
-           errno == EINTR);
-
-    return readnb;
-}
-
 int
 get_line(char *line, size_t max_len, const char *prompt)
 {
@@ -120,7 +108,7 @@ get_line(char *line, size_t max_len, const char *prompt)
         safe_write(2, prompt, strlen(prompt), -1);
     }
     for (;;) {
-        readnb = safe_read_partial(0, line + line_pos, max_len - 1U - line_pos);
+        readnb = safe_read(0, line + line_pos, 1U);
         if (readnb < 0 || readnb >= (ssize_t) (max_len - line_pos)) {
             ret = -1;
             break;
