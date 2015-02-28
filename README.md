@@ -1,4 +1,4 @@
-*Work in progress - Do not use for anything yet.*
+*Work in progress - Construction and API are subject to change*
 
 Blobcrypt
 =========
