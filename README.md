@@ -1,4 +1,4 @@
-*Work in progress - Construction and API are subject to change*
+*Work in progress - Construction and API are subject to change.*
 
 Blobcrypt
 =========
