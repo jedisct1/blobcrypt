@@ -48,6 +48,9 @@ int blobcrypt_encrypt_update(blobcrypt_encrypt_state *state,
                              const unsigned char *in,
                              unsigned long long len);
 
+int blobcrypt_encrypt_truncate(blobcrypt_encrypt_state *state,
+                               unsigned long long total_len);
+
 int blobcrypt_encrypt_final(blobcrypt_encrypt_state *state);
 
 int blobcrypt_decrypt_init(blobcrypt_decrypt_state *state,

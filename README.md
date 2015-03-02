@@ -88,6 +88,32 @@ functions will return `-1` as well, and no more data will be written.
 `close_error_cb` will be called instead of `close_success_cb` if a
 previous operation fails, no matter what the function is.
 
+Encrypting a message whose size is dynamic
+------------------------------------------
+
+If the size of a message is dynamic or not known when starting the
+encryption process, the following function can be used in order to
+output the header again, with an updated total length:
+
+```c
+int blobcrypt_encrypt_truncate(blobcrypt_encrypt_state *state,
+                               unsigned long long total_len);
+```
+
+When the output is a file, a typical way to use this function is to
+pass `blobcrypt_UNKNOWNSIZE` as the initial size, write the encrypted
+data, rewind the file and update the header with the actual length:
+
+```c
+blobcrypt_encrypt_init();
+blobcrypt_encrypt_update();
+blobcrypt_encrypt_update();
+...
+rewind();
+blobcrypt_encrypt_truncate();
+blobcrypt_encrypt_final();
+```
+
 Decryption
 ----------
 

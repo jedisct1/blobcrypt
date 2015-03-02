@@ -1,7 +1,7 @@
 
 HEADERS = out/blobcrypt.h
-HEADERS_P = src/headers.h src/bytealign.h src/block_aead.h src/blobcrypt_p.h
-SRC = src/block_aead.c src/blobcrypt_decrypt.c src/blobcrypt_encrypt.c
+HEADERS_P = src/blobcrypt/headers.h src/blobcrypt/bytealign.h src/blobcrypt/block_aead.h src/blobcrypt/blobcrypt_p.h
+SRC = src/blobcrypt/block_aead.c src/blobcrypt/blobcrypt_decrypt.c src/blobcrypt/blobcrypt_encrypt.c
 COMBINED = out/blobcrypt.c
 EXAMPLE = example/example
 EXAMPLE_SRC = example/example.c example/helpers.c example/key_derivation.c

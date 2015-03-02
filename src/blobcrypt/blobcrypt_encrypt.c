@@ -29,7 +29,6 @@ _write_header(blobcrypt_encrypt_state *state)
     assert(state->block_size <= UINT64_MAX);
     assert(state->block_size >= HEADER_BYTES);
     assert(state->total_len <= UINT64_MAX);
-    assert(state->offset == 0U);
 
     /* additional data: 40 bytes (HEADER_PUBBYTES) */
     header = (blob_header *) (void *) state->buf;
@@ -186,6 +185,16 @@ blobcrypt_encrypt_update(blobcrypt_encrypt_state *state,
 }
 
 int
+blobcrypt_encrypt_truncate(blobcrypt_encrypt_state *state,
+                           unsigned long long total_len)
+{
+    _blobcrypt_encrypt_flush(state);
+    state->total_len = total_len;
+
+    return _write_header(state);
+}
+
+int
 blobcrypt_encrypt_final(blobcrypt_encrypt_state *state)
 {
     int ret;
@@ -197,7 +206,9 @@ blobcrypt_encrypt_final(blobcrypt_encrypt_state *state)
     } else {
         ret = state->close_success_cb(state->user_ptr);
     }
-    sodium_memzero(state, sizeof *state);
+    sodium_memzero(state->k, sizeof *state->k);
+    sodium_memzero(state->message_id, sizeof *state->message_id);
+    sodium_memzero(state->buf, sizeof *state->buf);
 
     return ret;
 }
