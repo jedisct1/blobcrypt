@@ -106,7 +106,7 @@ _blobcrypt_decrypt_read_header(blobcrypt_decrypt_state *state)
     block_size_ull = _ull_from_u64_le(header.block_size);
     if (block_size_ull <= block_NONCEBYTES + block_ABYTES ||
         block_size_ull > block_MAXBYTES ||
-        block_size_ull >= SIZE_MAX - (block_NONCEBYTES + block_ABYTES)) {
+        block_size_ull >= SSIZE_MAX - (block_NONCEBYTES + block_ABYTES)) {
         sodium_memzero(&header, sizeof header);
         return -1;
     }
@@ -186,7 +186,7 @@ blobcrypt_decrypt_init(blobcrypt_decrypt_state *state,
     state->user_ptr = user_ptr;
     state->buf_pos = 0U;
     state->state = 1;
-    state->block_size = blobcrypt_BLOCKSIZE;
+    state->block_size = 0U;
     state->total_len = total_len;
     state->offset = 0U;
     memmove(state->k, k, blobcrypt_KEYBYTES);
@@ -229,10 +229,16 @@ blobcrypt_decrypt_update(blobcrypt_decrypt_state *state,
 int
 blobcrypt_decrypt_final(blobcrypt_decrypt_state *state)
 {
+    int ret;
+
     if (state->write_cb == _blobcrypt_decrypt_sinkhole_write_cb ||
         state->offset != state->total_len) {
         state->close_error_cb(state->user_ptr);
-        return -1;
+        ret = -1;
+    } else {
+        ret = state->close_success_cb(state->user_ptr);
     }
-    return state->close_success_cb(state->user_ptr);
+    sodium_memzero(state, sizeof *state);
+
+    return ret;
 }

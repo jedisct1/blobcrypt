@@ -64,6 +64,9 @@ int blobcrypt_decrypt_update(blobcrypt_decrypt_state *state,
 
 int blobcrypt_decrypt_final(blobcrypt_decrypt_state *state);
 
+size_t blobcrypt_message_block_size(const blobcrypt_encrypt_state *state);
+size_t blobcrypt_ciphertext_block_size(const blobcrypt_encrypt_state *state);
+
 #ifdef __cplusplus
 }
 #endif

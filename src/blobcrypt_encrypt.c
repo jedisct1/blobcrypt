@@ -100,6 +100,26 @@ _blobcrypt_encrypt_write_block(blobcrypt_encrypt_state *state)
     return _blobcrypt_encrypt_flush(state);
 }
 
+size_t
+blobcrypt_message_block_size(const blobcrypt_encrypt_state *state)
+{
+    assert(state->block_size > 0U);
+    assert(state->block_size <= SSIZE_MAX);
+
+    return state->block_size;
+}
+
+size_t
+blobcrypt_ciphertext_block_size(const blobcrypt_encrypt_state *state)
+{
+    if (state->block_size <= 0U) {
+        return state->block_size;
+    }
+    assert(state->block_size <= SSIZE_MAX - block_ABYTES);
+
+    return state->block_size + block_ABYTES;
+}
+
 int
 blobcrypt_encrypt_init(blobcrypt_encrypt_state *state,
                        int (*write_cb)(void *user_ptr,
@@ -117,7 +137,7 @@ blobcrypt_encrypt_init(blobcrypt_encrypt_state *state,
     assert(sizeof state->auth == block_ABYTES);
 
     if (total_len > UINT64_MAX || blobcrypt_BLOCKSIZE > UINT64_MAX ||
-        blobcrypt_BLOCKSIZE > SIZE_MAX || blobcrypt_BLOCKSIZE > block_MAXBYTES ||
+        blobcrypt_BLOCKSIZE > SSIZE_MAX || blobcrypt_BLOCKSIZE > block_MAXBYTES ||
         blobcrypt_BLOCKSIZE < HEADER_BYTES) {
         errno = EFBIG;
         _blobcrypt_encrypt_sinkhole(state);
@@ -168,10 +188,16 @@ blobcrypt_encrypt_update(blobcrypt_encrypt_state *state,
 int
 blobcrypt_encrypt_final(blobcrypt_encrypt_state *state)
 {
+    int ret;
+
     _blobcrypt_encrypt_flush(state);
     if (state->write_cb == _blobcrypt_encrypt_sinkhole_write_cb) {
         state->close_error_cb(state->user_ptr);
-        return -1;
+        ret = -1;
+    } else {
+        ret = state->close_success_cb(state->user_ptr);
     }
-    return state->close_success_cb(state->user_ptr);
+    sodium_memzero(state, sizeof *state);
+
+    return ret;
 }
