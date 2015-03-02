@@ -110,6 +110,10 @@ _blobcrypt_decrypt_read_header(blobcrypt_decrypt_state *state)
         sodium_memzero(&header, sizeof header);
         return -1;
     }
+    if (block_size_ull > sizeof state->buf) {
+        sodium_memzero(&header, sizeof header);
+        return -1;
+    }
     state->block_size = (size_t) block_size_ull;
     memcpy(state->message_id, header.message_id, sizeof state->message_id);
     sodium_memzero(&header, sizeof header);
@@ -205,9 +209,9 @@ blobcrypt_decrypt_update(blobcrypt_decrypt_state *state,
 
     assert(state->block_size <= sizeof state->buf);
     while (len > 0U) {
-        assert(state->buf_pos <= (sizeof state->nonce) + state->block_size +
+        assert(state->buf_pos <= (sizeof state->nonce) + (sizeof state->buf) +
               (sizeof state->auth));
-        remaining = (sizeof state->nonce) + state->block_size +
+        remaining = (sizeof state->nonce) + (sizeof state->buf) +
             (sizeof state->auth) - state->buf_pos;
         if (len > remaining) {
             plen = remaining;
