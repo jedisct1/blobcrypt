@@ -120,6 +120,25 @@ blobcrypt_ciphertext_block_size(const blobcrypt_encrypt_state *state)
 }
 
 int
+blobcrypt_set_offset(blobcrypt_encrypt_state *state,
+                    unsigned long long offset)
+{
+    size_t block_size;
+
+    if ((block_size = blobcrypt_message_block_size(state)) <= 0U) {
+        errno = ENODATA;
+        return -1;
+    }
+    if (offset % block_size != 0U) {
+        errno = EINVAL;
+        return -1;
+    }
+    state->offset = offset;
+
+    return 0;
+}
+
+int
 blobcrypt_encrypt_init(blobcrypt_encrypt_state *state,
                        int (*write_cb)(void *user_ptr,
                                        unsigned char *buf, size_t len),
