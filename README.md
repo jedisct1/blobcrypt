@@ -1,4 +1,3 @@
-*Work in progress - Construction and API are subject to change.*
 
 Blobcrypt
 =========
@@ -285,5 +284,3 @@ following parameters:
     Key: subkey as described above
     Nonce: last 64 bits of the nonce
 
-This construction might change later on, in order to use XChaCha20 and
-the final, 96-bit nonce version of the ChaCha20-Poly1305 construction.
