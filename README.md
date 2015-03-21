@@ -2,7 +2,8 @@
 Blobcrypt
 =========
 
-Blobcrypt is a small library to encrypt and decrypt large files using libsodium.
+Blobcrypt is a small library to encrypt and decrypt large files and
+data streams using libsodium.
 
 Installation
 ============
