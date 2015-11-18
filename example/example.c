@@ -155,7 +155,9 @@ main(int argc, char *argv[])
         (void) close(fd);
         return 1;
     }
-    sodium_init();
+    if (sodium_init() != 0) {
+        return 1;
+    }
     if (strcmp(argv[1], "-e") == 0) {
         ret = file_encrypt(fd, st.st_size);
     } else if (strcmp(argv[1], "-d") == 0) {
