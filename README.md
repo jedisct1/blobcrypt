@@ -272,7 +272,7 @@ Given an optional 256-bit `message ID`, a 256-bit secret key `k` and a
 192-bit nonce `nonce`, a subkey is calculated using the Blake2b hash
 function with the following parameters:
 
-    Personalization: 426c6f6243727970745f4c69622d0100 (BlobCrypt_Lib-\01\00)
+    Personalization: 426c6f6243727970745f4c69622d0100 ("BlobCrypt_Lib-\01\00")
     Salt: 128 first bits of the message ID
     Key: k
     Data: 128 first bits of the nonce
