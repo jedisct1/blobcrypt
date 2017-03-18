@@ -16,6 +16,9 @@ Combine the source files by running:
     
 And directly drop `out/blobcrypt.c` and `out/blobcrypt.h` into your project.
 
+This will also compile `example/example`, a simple tool to encrypt/decrypt
+files of any size using an email address and a password.
+
 Usage
 =====
 
