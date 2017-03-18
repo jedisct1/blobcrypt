@@ -1,6 +1,6 @@
 
 #define NONCE_EXTENSION_BYTES (block_NONCEBYTES - \
-                               crypto_aead_chacha20poly1305_NPUBBYTES)
+                               crypto_aead_chacha20poly1305_ietf_NPUBBYTES)
 
 static const unsigned char personal[crypto_generichash_blake2b_PERSONALBYTES] =
 { 0x42, 0x6c, 0x6f, 0x62, 0x43, 0x72, 0x79, 0x70,
@@ -19,14 +19,14 @@ block_encrypt(unsigned char *c, unsigned long long *clen_p,
     if (crypto_generichash_blake2b_salt_personal(subkey, sizeof subkey,
                                                  nonce, NONCE_EXTENSION_BYTES,
                                                  k,
-                                                 crypto_aead_chacha20poly1305_KEYBYTES,
+                                                 crypto_aead_chacha20poly1305_ietf_KEYBYTES,
                                                  salt, personal) != 0) {
         return -1;
     }
-    ret = crypto_aead_chacha20poly1305_encrypt(c, clen_p, m, mlen, ad, adlen,
-                                               NULL,
-                                               nonce + NONCE_EXTENSION_BYTES,
-                                               subkey);
+    ret = crypto_aead_chacha20poly1305_ietf_encrypt(c, clen_p, m, mlen, ad, adlen,
+                                                    NULL,
+                                                    nonce + NONCE_EXTENSION_BYTES,
+                                                    subkey);
     sodium_memzero(subkey, sizeof subkey);
 
     return ret;
@@ -39,20 +39,20 @@ block_decrypt(unsigned char *m, unsigned long long *mlen_p,
               const unsigned char *salt,  const unsigned char *nonce,
               const unsigned char *k)
 {
-    unsigned char subkey[crypto_aead_chacha20poly1305_KEYBYTES];
+    unsigned char subkey[crypto_aead_chacha20poly1305_ietf_KEYBYTES];
     int           ret;
 
     if (crypto_generichash_blake2b_salt_personal(subkey, sizeof subkey,
                                                  nonce, NONCE_EXTENSION_BYTES,
                                                  k,
-                                                 crypto_aead_chacha20poly1305_KEYBYTES,
+                                                 crypto_aead_chacha20poly1305_ietf_KEYBYTES,
                                                  salt, personal) != 0) {
         return -1;
     }
-    ret = crypto_aead_chacha20poly1305_decrypt(m, mlen_p, NULL, c, clen, ad,
-                                               adlen,
-                                               nonce + NONCE_EXTENSION_BYTES,
-                                               subkey);
+    ret = crypto_aead_chacha20poly1305_ietf_decrypt(m, mlen_p, NULL, c, clen, ad,
+                                                    adlen,
+                                                    nonce + NONCE_EXTENSION_BYTES,
+                                                    subkey);
     sodium_memzero(subkey, sizeof subkey);
 
     return ret;

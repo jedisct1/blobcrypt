@@ -265,8 +265,8 @@ AEAD construction
 -----------------
 
 The header and the data blocks are encrypted and authenticated using
-an AEAD construction based on the original ChaCha20-Poly1305 for IETF
-protocols draft.
+an AEAD construction based on the ChaCha20-Poly1305 construction
+defined by the IETF.
 
 Given an optional 256-bit `message ID`, a 256-bit secret key `k` and a
 192-bit nonce `nonce`, a subkey is calculated using the Blake2b hash
@@ -275,13 +275,12 @@ function with the following parameters:
     Personalization: 426c6f6243727970745f4c69622d0100 ("BlobCrypt_Lib-\01\00")
     Salt: 128 first bits of the message ID
     Key: k
-    Data: 128 first bits of the nonce
+    Data: first 96 bits of the nonce
     Output size: 256 bits
 
-The encryption and authentication then use the original construction
-described in the ChaCha20-Poly1305 for IETF protocols draft, with the
-following parameters:
+The encryption and authentication then use the construction described in the
+ChaCha20-Poly1305 for IETF protocols RFC, with the following parameters:
 
     Key: subkey as described above
-    Nonce: last 64 bits of the nonce
+    Nonce: last 96 bits of the nonce
 
